@@ -13,14 +13,25 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   useEffect(() => {
     (async () => {
       try {
-        const [resP5, resManim] = await Promise.all([
-          fetch('/health?engine=p5'),
-          fetch('/health?engine=manim')
+        // Check if we're in Electron environment
+        if (!window.electronAPI) {
+          console.warn('Electron API not available - running in development mode');
+          setHealth({ p5: false, manim: false });
+          return;
+        }
+
+        // Use Electron IPC instead of fetch
+        const [resultP5, resultManim] = await Promise.all([
+          window.electronAPI.checkHealth('p5'),
+          window.electronAPI.checkHealth('manim')
         ]);
-        const jsonP5 = await resP5.json();
-        const jsonManim = await resManim.json();
-        setHealth({ p5: jsonP5.available, manim: jsonManim.available });
-      } catch {
+        
+        setHealth({ 
+          p5: resultP5.success && (resultP5.available ?? false), 
+          manim: resultManim.success && (resultManim.available ?? false) 
+        });
+      } catch (error) {
+        console.error('Health check failed:', error);
         setHealth({ p5: false, manim: false });
       }
     })();

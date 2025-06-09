@@ -9,7 +9,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSubmit }) => {
   const [prompt, setPrompt] = useState('')
   const [engine, setEngine] = useState<'p5' | 'manim'>('p5')
   const [duration, setDuration] = useState(10)
-  const [showAdvanced, setShowAdvanced] = useState(false)
   const { apiKey } = useApiKey()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 

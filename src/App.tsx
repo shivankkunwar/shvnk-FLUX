@@ -1,23 +1,59 @@
-import React, { useState } from 'react'
+import  { useState, useEffect } from 'react'
 import './index.css'
 import { useApiKey } from './contexts/ApiKeyContext'
 import Header from './components/Header'
 import LandingPage from './components/LandingPage'
 import ProgressModal from './components/ProgressModal'
 import VideoPlayer from './components/VideoPlayer'
+import UpdateNotification from './components/UpdateNotification'
+import UpdateChecker from './components/UpdateChecker'
+
+interface VideoResult {
+  videoPath: string;
+  downloadPath: string;
+  filename: string;
+}
 
 function App() {
   const [runId, setRunId] = useState<string | null>(null)
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
   const [currentView, setCurrentView] = useState<'landing' | 'preparing' | 'processing' | 'result'>('landing')
   const [selectedEngine, setSelectedEngine] = useState<'p5' | 'manim'>('p5')
+  const [logs, setLogs] = useState<string[]>([])
   const { apiKey } = useApiKey()
+  const [videoResult, setVideoResult] = useState<VideoResult | null>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [showUpdateNotification, setShowUpdateNotification] = useState(false)
+  const [appVersion, setAppVersion] = useState<string>('')
+
+  // Get app version on mount
+  useEffect(() => {
+    if (window.electronAPI) {
+      window.electronAPI.updater.getAppVersion().then(version => {
+        setAppVersion(version);
+      }).catch(console.error);
+    }
+  }, []);
+
+  // Set up log listener for real-time progress updates
+  useEffect(() => {
+    if (window.electronAPI) {
+      const cleanup = window.electronAPI.onRenderLog((event, data) => {
+        setLogs(prev => [...prev, data.message]);
+      });
+
+      // Cleanup function to remove listeners when component unmounts
+      return cleanup;
+    }
+  }, []);
 
   const handleSubmit = async (prompt: string, engine: 'p5' | 'manim', duration: number) => {
+    // Reset state for new generation
     setRunId(null)
     setVideoUrl(null)
-    setSelectedEngine(engine) // Store the selected engine
-    setCurrentView('preparing') // Show immediate feedback
+    setLogs([]) // Clear previous logs
+    setSelectedEngine(engine)
+    setCurrentView('preparing')
     
     if (!apiKey) {
       alert('Please enter your API key')
@@ -25,16 +61,37 @@ function App() {
       return
     }
     
+    if (!window.electronAPI) {
+      alert('This app must be run as an Electron application')
+      setCurrentView('landing')
+      return
+    }
+    
     try {
-      const res = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, engine, apiKey, duration }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Generation failed')
-      setRunId(data.runId)
-      setCurrentView('processing') // Switch to processing when runId is ready
+      // Generate a run ID for tracking
+      const newRunId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()
+      setRunId(newRunId)
+      setCurrentView('processing')
+      
+      // Call Electron IPC instead of HTTP fetch
+      const result = await window.electronAPI.generateVideo({
+        prompt,
+        engine,
+        apiKey,
+        duration
+      });
+      
+      if (result.success && result.videoPath) {
+        setVideoUrl(result.videoPath)
+        setCurrentView('result')
+        setVideoResult({
+          videoPath: result.videoPath,
+          downloadPath: result.downloadPath || '',
+          filename: result.filename || 'video.mp4',
+        });
+      } else {
+        throw new Error('Video generation failed')
+      }
     } catch (err) {
       console.error(err)
       alert((err as Error).message)
@@ -43,20 +100,64 @@ function App() {
   }
 
   const handleVideoComplete = (url: string) => {
-    setVideoUrl(url)
+    // If the ProgressModal indicates completion but we don't have a video URL yet,
+    // we should have gotten it from the initial generateVideo call
+    if (url === 'video-generated' && videoResult?.videoPath) {
+      setVideoUrl(videoResult.videoPath)
+    } else if (url !== 'video-generated') {
+      setVideoUrl(url)
+    }
     setCurrentView('result')
   }
 
   const handleStartOver = () => {
     setRunId(null)
     setVideoUrl(null)
-    setSelectedEngine('p5') // Reset to default
+    setLogs([]) // Clear logs when starting over
+    setSelectedEngine('p5')
     setCurrentView('landing')
+  }
+
+  const handleUpdateCheck = () => {
+    setShowUpdateNotification(true);
+  }
+
+  const handleUpdateNotificationClose = () => {
+    setShowUpdateNotification(false);
   }
 
   return (
     <div style={{ minHeight: '100vh', background: '#0A0A0A' }}>
       <Header selectedEngine={selectedEngine} />
+      
+      {/* Update Notification */}
+      {showUpdateNotification && (
+        <UpdateNotification onClose={handleUpdateNotificationClose} />
+      )}
+      
+      {/* Manual Update Checker in Header */}
+      <div style={{ 
+        position: 'fixed', 
+        top: '1rem', 
+        right: '1rem', 
+        zIndex: 40,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '1rem'
+      }}>
+        {appVersion && (
+          <span style={{ 
+            color: '#9CA3AF', 
+            fontSize: '0.75rem',
+            background: 'rgba(0, 0, 0, 0.5)',
+            padding: '0.25rem 0.5rem',
+            borderRadius: '0.25rem'
+          }}>
+            v{appVersion}
+          </span>
+        )}
+        <UpdateChecker onUpdateCheck={handleUpdateCheck} />
+      </div>
       
       {/* Main content with proper spacing for fixed header */}
       <main style={{ paddingTop: '4rem' }}>
@@ -207,72 +308,35 @@ function App() {
                       animation: index === 0 ? 'pulse 1.5s ease-in-out infinite' : 'none'
                     }} />
                     <span style={{
-                      color: index === 0 ? '#007AFF' : '#6B7280',
                       fontSize: '0.9rem',
-                      fontWeight: '500'
+                      color: index === 0 ? '#007AFF' : '#9CA3AF',
+                      fontWeight: index === 0 ? '500' : '400'
                     }}>
                       {status}
                     </span>
                   </div>
                 ))}
               </div>
-
-              {/* Engine-specific hint */}
-              <div style={{
-                background: 'rgba(0, 122, 255, 0.1)',
-                border: '1px solid rgba(0, 122, 255, 0.2)',
-                borderRadius: '0.75rem',
-                padding: '1rem',
-                fontSize: '0.9rem',
-                color: '#93C5FD',
-                lineHeight: '1.5'
-              }}>
-                <strong>{selectedEngine === 'manim' ? 'Manim' : 'P5.js'}</strong> environment is being prepared. 
-                {selectedEngine === 'manim' 
-                  ? ' Mathematical rendering pipeline loading...' 
-                  : ' Creative coding workspace initializing...'
-                }
-              </div>
             </div>
           </div>
         )}
 
         {currentView === 'processing' && runId && (
-          <div style={{ 
-            minHeight: '100vh', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center' 
-          }}>
-            <ProgressModal 
-              runId={runId} 
-              onDone={handleVideoComplete}
-              engine={selectedEngine}
-            />
-          </div>
+          <ProgressModal 
+            runId={runId} 
+            onDone={handleVideoComplete} 
+            engine={selectedEngine}
+            logs={logs} // Pass logs as props instead of ProgressModal fetching them
+          />
         )}
 
-        {currentView === 'result' && videoUrl && (
-          <div style={{ 
-            minHeight: '100vh', 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            padding: '1.5rem'
-          }}>
-      <VideoPlayer videoUrl={videoUrl} />
-            <button
-              onClick={handleStartOver}
-              className="btn-secondary"
-              style={{
-                marginTop: '2rem',
-                fontSize: '1.1rem'
-              }}
-            >
-              Create Another Video
-            </button>
-          </div>
+        {currentView === 'result' && videoResult && (
+          <VideoPlayer
+            videoPath={videoResult.videoPath}
+            downloadPath={videoResult.downloadPath}
+            filename={videoResult.filename}
+            onStartOver={handleStartOver}
+          />
         )}
       </main>
 
@@ -329,7 +393,7 @@ function App() {
           }
         `}
       </style>
-      </div>
+    </div>
   )
 }
 

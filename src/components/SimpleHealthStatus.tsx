@@ -30,9 +30,23 @@ const SimpleHealthStatus: React.FC<SimpleHealthStatusProps> = ({ selectedEngine 
   const checkHealth = useCallback(async (engine: string = selectedEngine) => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:4000/api/health?engine=${engine}`);
-      const data = await response.json();
-      setHealthData(data);
+      // Use Electron IPC instead of HTTP fetch
+      if (window.electronAPI) {
+        const ipcData = await window.electronAPI.checkHealth();
+        // Convert IPC response to expected format
+        const data: HealthData = {
+          success: ipcData.status === 'healthy',
+          // For now, just set basic readiness based on IPC response
+          p5Readiness: { ready: ipcData.status === 'healthy', criticalMet: 1, criticalTotal: 1 },
+          manimReadiness: { ready: ipcData.status === 'healthy', criticalMet: 1, criticalTotal: 1 }
+        };
+        setHealthData(data);
+      } else {
+        // Fallback for non-Electron environment (shouldn't happen in production)
+        const response = await fetch(`http://localhost:4000/api/health?engine=${engine}`);
+        const data = await response.json();
+        setHealthData(data);
+      }
     } catch (error) {
       console.error('Health check failed:', error);
       setHealthData({ success: false });

@@ -4,6 +4,7 @@ interface ProgressModalProps {
   runId: string
   onDone: (videoPath: string) => void
   engine?: 'p5' | 'manim'
+  logs: string[]
 }
 
 interface EducationalCard {
@@ -14,184 +15,169 @@ interface EducationalCard {
   icon: React.ReactNode
 }
 
-const ProgressModal: React.FC<ProgressModalProps> = ({ runId, onDone, engine = 'p5' }) => {
-  const [logs, setLogs] = useState<string[]>([])
+const ProgressModal: React.FC<ProgressModalProps> = ({ runId, onDone, engine = 'p5', logs }) => {
   const [status, setStatus] = useState<'connecting' | 'processing' | 'completed' | 'error'>('connecting')
   const [error, setError] = useState<string | null>(null)
   const [showEducational, setShowEducational] = useState(false)
   const [currentCardIndex, setCurrentCardIndex] = useState(0)
   const [startTime] = useState(Date.now())
+  const [mounted, setMounted] = useState(true)
+  const [hasCalledOnDone, setHasCalledOnDone] = useState(false)
   const logContainerRef = useRef<HTMLDivElement>(null)
 
-  // P5.js Educational Content
+  // Educational cards for different engines
   const p5Cards: EducationalCard[] = [
     {
-      id: 'canvas',
-      title: 'Canvas Creation',
-      description: 'How browser rendering works',
-      content: 'Your code creates a virtual canvas where every pixel is calculated in real-time. The browser\'s rendering engine transforms mathematical functions into visual elements at 60fps.',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-        </svg>
-      )
+      id: '1',
+      title: 'P5.js Creative Coding',
+      description: 'The foundation of interactive art',
+      content: 'P5.js is a JavaScript library that makes coding accessible for artists, designers, and educators. It provides a simple way to create visual art, animations, and interactive experiences in the browser.',
+      icon: <svg style={{ width: '2rem', height: '2rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v6a4 4 0 004 4h4v7z" /></svg>
     },
     {
-      id: 'animation',
-      title: 'Animation Loop Magic',
-      description: 'The illusion of motion',
-      content: 'Every frame is a snapshot frozen in time. By drawing 30 frames per second, we create smooth motion that tricks your brain into seeing continuous movement.',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
-      )
+      id: '2',
+      title: 'Canvas Rendering',
+      description: 'Drawing magic in the browser',
+      content: 'P5.js uses HTML5 Canvas to render graphics. Each frame, the canvas is cleared and redrawn, creating smooth animations. The draw() function runs continuously, updating your visual elements 60 times per second.',
+      icon: <svg style={{ width: '2rem', height: '2rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
     },
     {
-      id: 'capture',
-      title: 'Frame Capture Process',
-      description: 'Puppeteer screenshot mechanics',
-      content: 'A headless browser runs your animation while our system captures each frame as a high-quality PNG image, building a sequence of thousands of individual screenshots.',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      )
-    },
-    {
-      id: 'encoding',
-      title: 'Video Assembly',
-      description: 'FFmpeg encoding pipeline',
-      content: 'Individual frames are compressed and encoded into a single MP4 file using advanced video codecs. This process optimizes file size while maintaining visual quality.',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      )
-    },
-    {
-      id: 'optimization',
-      title: 'Performance Optimization',
-      description: 'Why frame rates matter',
-      content: 'Higher frame rates create smoother motion but increase file size. 30fps provides the perfect balance between smooth animation and reasonable processing time.',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
-      )
+      id: '3',
+      title: 'Video Generation',
+      description: 'From code to cinema',
+      content: 'Your P5.js sketch is captured frame by frame using a headless browser. Each frame is saved as an image, then combined using FFmpeg to create a smooth video file. This process ensures high-quality output.',
+      icon: <svg style={{ width: '2rem', height: '2rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
     }
   ]
 
-  // Manim Educational Content
   const manimCards: EducationalCard[] = [
     {
-      id: 'scene-graph',
-      title: 'Mathematical Scene Graph',
-      description: 'Object hierarchy visualization',
-      content: 'Manim creates a tree of mathematical objects - from simple points to complex equations. Each object knows how to animate itself and interact with others in the scene.',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-      )
+      id: '1',
+      title: 'Mathematical Animation',
+      description: 'Bringing math to life',
+      content: 'Manim was created by Grant Sanderson (3Blue1Brown) to animate mathematical concepts. It excels at creating educational videos with smooth transitions, geometric transformations, and mathematical notation.',
+      icon: <svg style={{ width: '2rem', height: '2rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
     },
     {
-      id: 'interpolation',
-      title: 'Animation Interpolation',
-      description: 'Easing functions & transformations',
-      content: 'Smooth transitions between states use mathematical interpolation. Bezier curves and easing functions create natural-feeling animations that follow physics principles.',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-        </svg>
-      )
+      id: '2',
+      title: 'Scene-Based Architecture',
+      description: 'Structured storytelling',
+      content: 'Manim organizes animations into scenes. Each scene contains mathematical objects (Mobjects) that can be transformed, animated, and composed together. This structure makes complex animations manageable and reusable.',
+      icon: <svg style={{ width: '2rem', height: '2rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
     },
     {
-      id: 'latex',
-      title: 'LaTeX Integration',
-      description: 'Mathematical typesetting pipeline',
-      content: 'Complex mathematical expressions are rendered using LaTeX, the gold standard for mathematical typesetting. Each symbol is precisely positioned and scaled.',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-        </svg>
-      )
-    },
-    {
-      id: 'compilation',
-      title: 'Python to Video',
-      description: 'Scene compilation process',
-      content: 'Your Python code is analyzed and broken down into discrete animation segments. Each segment is rendered independently, then assembled into the final video sequence.',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-        </svg>
-      )
-    },
-    {
-      id: 'advanced',
-      title: 'Advanced Animations',
-      description: 'Morphing, highlighting, synchronized effects',
-      content: 'Complex animations like object morphing and coordinated movements require precise timing calculations. Manim handles the mathematical complexity behind the scenes.',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
-      )
+      id: '3',
+      title: 'Professional Rendering',
+      description: 'Cinema-quality output',
+      content: 'Manim renders to high-quality video formats using Cairo graphics and FFmpeg. It supports 4K resolution, custom frame rates, and professional codecs. The rendering process optimizes each frame for maximum visual quality.',
+      icon: <svg style={{ width: '2rem', height: '2rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0V1a1 1 0 011-1h2a1 1 0 011 1v18a1 1 0 01-1 1h-2a1 1 0 01-1-1V6H7v16a1 1 0 01-1 1H4a1 1 0 01-1-1V1a1 1 0 011-1h2a1 1 0 011 1v3z" /></svg>
     }
   ]
 
+  // Select cards based on engine
   const cards = engine === 'manim' ? manimCards : p5Cards
 
+  // Initialize processing and start educational transition
   useEffect(() => {
     if (!runId) return
-
-    const eventSource = new EventSource(`/api/logs?runId=${runId}`)
     
-    eventSource.onopen = () => {
-      setStatus('processing')
-      // Start educational transition after 2 seconds
-      setTimeout(() => {
-        setShowEducational(true)
-      }, 2000)
-    }
+    setStatus('processing')
+    // Start educational transition after 2 seconds
+    setTimeout(() => {
+      setShowEducational(true)
+    }, 2000)
+  }, [runId])
 
-    eventSource.onmessage = (event) => {
-      const logMessage = event.data
-      setLogs(prev => [...prev, logMessage])
+  // Monitor logs for errors and completion - SAFER VERSION
+  useEffect(() => {
+    if (!logs || logs.length === 0) return
+
+    try {
+      const latestLog = logs[logs.length - 1]
+      if (!latestLog) return
       
-      // Check if this is an actual error message (not Manim progress)
-      const isProgress = logMessage.includes('Animation') && (logMessage.includes('%|') || logMessage.includes('it/s'))
-      const isActualError = (logMessage.toLowerCase().includes('error') || 
-                           logMessage.toLowerCase().includes('failed') ||
-                           logMessage.toLowerCase().includes('traceback')) && !isProgress
+      console.log('[ProgressModal] Processing log:', latestLog)
       
-      if (isActualError) {
-        setError(logMessage)
+      // Check for errors (but not progress messages or success contexts)
+      const isProgress = latestLog.includes('Animation') && (latestLog.includes('%|') || latestLog.includes('it/s'))
+      
+      // Only detect ACTUAL errors, not words in successful contexts
+      const isRealError = (
+        // Actual error patterns
+        (latestLog.toLowerCase().includes('error:') || latestLog.toLowerCase().includes('error ')) &&
+        !latestLog.toLowerCase().includes('completed successfully')
+      ) || (
+        latestLog.toLowerCase().includes('failed') && 
+        !latestLog.toLowerCase().includes('completed successfully') &&
+        !latestLog.toLowerCase().includes('generation completed') &&
+        !latestLog.toLowerCase().includes('video generation')
+      ) || (
+        latestLog.toLowerCase().includes('traceback') ||
+        latestLog.toLowerCase().includes('exception:') ||
+        latestLog.toLowerCase().includes('syntax error') ||
+        latestLog.toLowerCase().includes('module not found') ||
+        latestLog.toLowerCase().includes('command not found') ||
+        latestLog.toLowerCase().includes('process exited with code') &&
+        !latestLog.includes('code 0') // Exit code 0 is success
+      )
+      
+      // Add debug logging for error detection
+      if (isRealError) {
+        console.log('[ProgressModal] DEBUG - Error patterns detected in log:', latestLog)
+        console.log('[ProgressModal] DEBUG - isProgress:', isProgress)
+        console.log('[ProgressModal] DEBUG - status:', status)
       }
-    }
-
-    eventSource.addEventListener('done', (event) => {
-      const data = JSON.parse(event.data)
-      setStatus('completed')
-      if (data.videoPath) {
-        onDone(data.videoPath)
-      } else {
-        setError('Video generation completed but no video path received')
+      
+      if (isRealError && !isProgress && status === 'processing') {
+        console.log('[ProgressModal] Error detected:', latestLog)
+        setError(latestLog)
         setStatus('error')
       }
-      eventSource.close()
-    })
-
-    eventSource.onerror = () => {
-      setError('Connection to server lost')
+      
+      // Check for completion - ONLY look for actual video completion, not code generation
+      const completionKeywords = [
+        'video generation completed successfully',
+        'video generation completed',
+        'video saved successfully', 
+        'video created successfully',
+        'render complete',
+        'video saved to',
+        'ffmpeg encoding completed',
+        'video file created',
+        'video output saved'
+      ]
+      
+      // DO NOT treat these as completion:
+      const falseCompletionKeywords = [
+        'code generation completed',
+        'code generation finished',
+        'generation complete'  // This is just code generation, not video
+      ]
+      
+      const isCompleted = completionKeywords.some(keyword => 
+        latestLog.toLowerCase().includes(keyword)
+      ) && !falseCompletionKeywords.some(keyword => 
+        latestLog.toLowerCase().includes(keyword)
+      )
+      
+      if (isCompleted && status === 'processing') {
+        console.log('[ProgressModal] Completion detected:', latestLog)
+        setStatus('completed')
+        
+        // Delay the onDone call to prevent immediate unmounting
+        setTimeout(() => {
+          // Use latest status value to avoid stale closure
+          if (typeof onDone === 'function') {
+            onDone('video-generated')
+          }
+        }, 500)
+      }
+    } catch (err) {
+      console.error('[ProgressModal] Error in log processing:', err)
+      setError('Log processing error: ' + String(err))
       setStatus('error')
-      eventSource.close()
     }
-
-    return () => eventSource.close()
-  }, [runId, onDone])
+  }, [logs, status, onDone])
 
   // Auto-advance carousel
   useEffect(() => {
@@ -214,6 +200,13 @@ const ProgressModal: React.FC<ProgressModalProps> = ({ runId, onDone, engine = '
       }, 10)
     }
   }, [logs])
+
+  // Add unmount cleanup
+  useEffect(() => {
+    return () => {
+      setMounted(false)
+    }
+  }, [])
 
   const getLogColor = (log: string) => {
     const logLower = log.toLowerCase()

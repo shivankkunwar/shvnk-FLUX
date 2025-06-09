@@ -181,7 +181,7 @@ const HealthStatus: React.FC<HealthStatusProps> = ({ selectedEngine, onHealthCha
                     {req.solution.match(/`([^`]+)`/)?.[1] || ''}
                   </code>
                   <button
-                    onClick={() => copyToClipboard(req.solution.match(/`([^`]+)`/)?.[1] || '')}
+                    onClick={() => copyToClipboard(req.solution?.match(/`([^`]+)`/)?.[1] || '')}
                     className="text-xs text-gray-400 hover:text-gray-200 transition-colors"
                   >
                     Copy

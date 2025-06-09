@@ -21,8 +21,6 @@ const ProgressModal: React.FC<ProgressModalProps> = ({ runId, onDone, engine = '
   const [showEducational, setShowEducational] = useState(false)
   const [currentCardIndex, setCurrentCardIndex] = useState(0)
   const [startTime] = useState(Date.now())
-  const [mounted, setMounted] = useState(true)
-  const [hasCalledOnDone, setHasCalledOnDone] = useState(false)
   const logContainerRef = useRef<HTMLDivElement>(null)
 
   // Educational cards for different engines
@@ -200,13 +198,6 @@ const ProgressModal: React.FC<ProgressModalProps> = ({ runId, onDone, engine = '
       }, 10)
     }
   }, [logs])
-
-  // Add unmount cleanup
-  useEffect(() => {
-    return () => {
-      setMounted(false)
-    }
-  }, [])
 
   const getLogColor = (log: string) => {
     const logLower = log.toLowerCase()

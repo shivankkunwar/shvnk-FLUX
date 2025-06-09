@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react'
 
 interface ProgressModalProps {
-  runId: string
+  _runId: string
   onDone: (videoPath: string) => void
   engine?: 'p5' | 'manim'
   logs: string[]
 }
 
-const ProgressModalSimple: React.FC<ProgressModalProps> = ({ runId, onDone, engine = 'p5', logs }) => {
+const ProgressModalSimple: React.FC<ProgressModalProps> = ({ _runId, onDone, engine = 'p5', logs }) => {
   const [status, setStatus] = useState<'processing' | 'completed' | 'error'>('processing')
   const [error, setError] = useState<string | null>(null)
   const [startTime] = useState(Date.now())

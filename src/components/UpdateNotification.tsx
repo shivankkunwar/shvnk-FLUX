@@ -29,7 +29,7 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({ onClose }) => {
     const cleanupFunctions: (() => void)[] = [];
 
     // Setup event listeners
-    const cleanupStatus = window.electronAPI.updater.onUpdateStatus((_, data) => {
+    const cleanupStatus = window.electronAPI.updater.onUpdateStatus((_event, _data) => {
       setStatus('checking');
       setError(null);
     });
@@ -45,7 +45,7 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({ onClose }) => {
       setTimeout(() => setIsVisible(false), 3000); // Auto-hide after 3 seconds
     });
 
-    const cleanupError = window.electronAPI.updater.onUpdateError((_, data) => {
+    const cleanupError = window.electronAPI.updater.onUpdateError((_event, data) => {
       setError(data.error);
       setStatus('error');
       setIsVisible(true);

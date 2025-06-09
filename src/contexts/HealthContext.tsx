@@ -20,16 +20,16 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           return;
         }
 
-        // Use Electron IPC instead of fetch
+        // Parallel health checks for both engines
         const [resultP5, resultManim] = await Promise.all([
-          window.electronAPI.checkHealth('p5'),
-          window.electronAPI.checkHealth('manim')
-        ]);
-        
-        setHealth({ 
-          p5: resultP5.success && (resultP5.available ?? false), 
-          manim: resultManim.success && (resultManim.available ?? false) 
-        });
+          window.electronAPI.checkHealth(),
+          window.electronAPI.checkHealth()
+        ])
+
+        setHealth({
+          p5: resultP5.success && (resultP5.p5?.available ?? false),
+          manim: resultManim.success && (resultManim.manim?.available ?? false)
+        })
       } catch (error) {
         console.error('Health check failed:', error);
         setHealth({ p5: false, manim: false });

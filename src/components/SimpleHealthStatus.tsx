@@ -35,10 +35,9 @@ const SimpleHealthStatus: React.FC<SimpleHealthStatusProps> = ({ selectedEngine 
         const ipcData = await window.electronAPI.checkHealth();
         // Convert IPC response to expected format
         const data: HealthData = {
-          success: ipcData.status === 'healthy',
-          // For now, just set basic readiness based on IPC response
-          p5Readiness: { ready: ipcData.status === 'healthy', criticalMet: 1, criticalTotal: 1 },
-          manimReadiness: { ready: ipcData.status === 'healthy', criticalMet: 1, criticalTotal: 1 }
+          success: ipcData.success,
+          p5Readiness: { ready: ipcData.success && ipcData.available, criticalMet: 1, criticalTotal: 1 },
+          manimReadiness: { ready: ipcData.success && ipcData.available, criticalMet: 1, criticalTotal: 1 }
         };
         setHealthData(data);
       } else {

@@ -1,4 +1,4 @@
-import  { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import './index.css'
 import { useApiKey } from './contexts/ApiKeyContext'
 import Header from './components/Header'
@@ -15,37 +15,34 @@ interface VideoResult {
 }
 
 function App() {
+  const [currentView, setCurrentView] = useState<'landing' | 'preparing' | 'processing' | 'result'>('landing')
   const [runId, setRunId] = useState<string | null>(null)
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
-  const [currentView, setCurrentView] = useState<'landing' | 'preparing' | 'processing' | 'result'>('landing')
   const [selectedEngine, setSelectedEngine] = useState<'p5' | 'manim'>('p5')
+  const [videoResult, setVideoResult] = useState<VideoResult | null>(null)
   const [logs, setLogs] = useState<string[]>([])
   const { apiKey } = useApiKey()
-  const [videoResult, setVideoResult] = useState<VideoResult | null>(null)
-  const [isGenerating, setIsGenerating] = useState(false)
   const [showUpdateNotification, setShowUpdateNotification] = useState(false)
   const [appVersion, setAppVersion] = useState<string>('')
 
-  // Get app version on mount
+  // Effect to get app version
+  useEffect(() => {
+    if (window.electronAPI?.updater?.getAppVersion) {
+      window.electronAPI.updater.getAppVersion()
+        .then((version) => setAppVersion(version))
+        .catch(() => setAppVersion('Unknown'));
+    }
+  }, [])
+
+  // Effect to listen for render logs
   useEffect(() => {
     if (window.electronAPI) {
-      window.electronAPI.updater.getAppVersion().then(version => {
-        setAppVersion(version);
-      }).catch(console.error);
+      const cleanup = window.electronAPI.onRenderLog((_event, data) => {
+        setLogs(prev => [...prev, data.message])
+      })
+      return cleanup
     }
-  }, []);
-
-  // Set up log listener for real-time progress updates
-  useEffect(() => {
-    if (window.electronAPI) {
-      const cleanup = window.electronAPI.onRenderLog((event, data) => {
-        setLogs(prev => [...prev, data.message]);
-      });
-
-      // Cleanup function to remove listeners when component unmounts
-      return cleanup;
-    }
-  }, []);
+  }, [])
 
   const handleSubmit = async (prompt: string, engine: 'p5' | 'manim', duration: number) => {
     // Reset state for new generation

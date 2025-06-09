@@ -8,7 +8,15 @@ export interface IElectronAPI {
     filename?: string;
     error?: string 
   }>;
-  checkHealth: () => Promise<{ status: string; message?: string }>;
+  checkHealth: () => Promise<{ 
+    success: boolean; 
+    available: boolean;
+    p5?: { available: boolean };
+    manim?: { available: boolean };
+    message?: string;
+    reason?: string;
+    timestamp?: string;
+  }>;
   downloadVideo: (path: string) => Promise<any>;
   onRenderLog: (callback: (event: any, data: any) => void) => () => void;
   updater: {

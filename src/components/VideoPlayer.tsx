@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowDownTrayIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
 interface VideoPlayerProps {
   videoPath: string;

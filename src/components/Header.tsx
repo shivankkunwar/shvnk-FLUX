@@ -1,7 +1,12 @@
 import React, { useState } from 'react'
 import { useApiKey } from '../contexts/ApiKeyContext'
+import SimpleHealthStatus from './SimpleHealthStatus'
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  selectedEngine: 'p5' | 'manim'
+}
+
+const Header: React.FC<HeaderProps> = ({ selectedEngine }) => {
   const [showApiKeyModal, setShowApiKeyModal] = useState(false)
   const [tempApiKey, setTempApiKey] = useState('')
   const { apiKey, setApiKey } = useApiKey()
@@ -47,8 +52,11 @@ const Header: React.FC = () => {
             RenderFlux
           </div>
 
-          {/* Settings button */}
-          <button
+          {/* Health Status and Settings */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <SimpleHealthStatus selectedEngine={selectedEngine} />
+            
+            <button
             onClick={handleOpenModal}
             style={{
               position: 'relative',
@@ -87,6 +95,7 @@ const Header: React.FC = () => {
               background: apiKey ? '#10B981' : '#EF4444'
             }} />
           </button>
+          </div>
         </div>
       </header>
 

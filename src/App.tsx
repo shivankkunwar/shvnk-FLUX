@@ -56,7 +56,7 @@ function App() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0A0A0A' }}>
-      <Header />
+      <Header selectedEngine={selectedEngine} />
       
       {/* Main content with proper spacing for fixed header */}
       <main style={{ paddingTop: '4rem' }}>
@@ -261,7 +261,7 @@ function App() {
             justifyContent: 'center',
             padding: '1.5rem'
           }}>
-            <VideoPlayer videoUrl={videoUrl} />
+      <VideoPlayer videoUrl={videoUrl} />
             <button
               onClick={handleStartOver}
               className="btn-secondary"
@@ -329,7 +329,7 @@ function App() {
           }
         `}
       </style>
-    </div>
+      </div>
   )
 }
 

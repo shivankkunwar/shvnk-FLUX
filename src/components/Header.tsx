@@ -25,193 +25,100 @@ const Header: React.FC<HeaderProps> = ({ selectedEngine }) => {
   return (
     <>
       {/* Header */}
-      <header style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 50,
-        background: 'rgba(10, 10, 10, 0.8)',
-        backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(55, 65, 81, 0.5)'
-      }}>
-        <div style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          padding: '1rem 1.5rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}>
+      <header className="fixed top-0 left-0 right-0 z-50 bg-gray-950/80 backdrop-blur-xl border-b border-gray-700/50">
+        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           {/* Logo */}
           <div style={{
             fontSize: '1.25rem',
             fontWeight: '600',
             color: 'white'
-          }}>
+          }}
+          className="text-xl font-semibold text-white logo-glow">
             RenderFlux
           </div>
 
           {/* Health Status and Settings */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div className="flex items-center space-x-2 sm:space-x-3"> {/* Adjusted space-x */}
             <SimpleHealthStatus selectedEngine={selectedEngine} />
             
             <button
-            onClick={handleOpenModal}
-            style={{
-              position: 'relative',
-              padding: '0.5rem',
-              borderRadius: '0.5rem',
-              color: '#9CA3AF',
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'white'
-              e.currentTarget.style.background = 'rgba(26, 26, 26, 0.5)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = '#9CA3AF'
-              e.currentTarget.style.background = 'transparent'
-            }}
-            title="Settings"
-          >
-            <svg style={{ width: '1.25rem', height: '1.25rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            
-            {/* Status indicator */}
-            <div style={{
-              position: 'absolute',
-              top: '0.25rem',
-              right: '0.25rem',
-              width: '0.5rem',
-              height: '0.5rem',
-              borderRadius: '50%',
-              background: apiKey ? '#10B981' : '#EF4444'
-            }} />
-          </button>
+              onClick={handleOpenModal}
+              className="relative p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700/60 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition-colors duration-200"
+              title="API Key Settings"
+              aria-label="API Key Settings"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <div
+                className={`absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full border-2 border-gray-800 ${apiKey ? 'bg-green-400' : 'bg-red-500'}`}
+                title={apiKey ? 'API Key set' : 'API Key not set'}
+              />
+            </button>
           </div>
         </div>
       </header>
 
       {/* API Key Modal */}
       {showApiKeyModal && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 100,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '1rem'
-        }}>
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="apiKeyModalTitle"
+        >
           {/* Backdrop */}
           <div 
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'rgba(0, 0, 0, 0.7)',
-              backdropFilter: 'blur(8px)'
-            }}
+            className="absolute inset-0 bg-black/70 backdrop-blur-md"
             onClick={() => setShowApiKeyModal(false)}
+            aria-hidden="true"
           />
           
-          {/* Modal */}
-          <div className="glass" style={{
-            position: 'relative',
-            borderRadius: '1rem',
-            padding: '2rem',
-            width: '100%',
-            maxWidth: '28rem'
-          }}>
-            <div style={{ marginBottom: '1.5rem' }}>
-              <h2 style={{
-                fontSize: '1.5rem',
-                fontWeight: '600',
-                color: 'white',
-                marginBottom: '0.5rem'
-              }}>
+          {/* Modal Content */}
+          <div className="relative rounded-2xl p-6 sm:p-8 w-full max-w-md bg-gradient-gray-800-900 shadow-modal-custom">
+            <div className="mb-6 text-center sm:text-left">
+              <h2 id="apiKeyModalTitle" className="text-xl sm:text-2xl font-semibold text-white mb-1.5">
                 API Configuration
               </h2>
-              <p style={{
-                color: '#9CA3AF',
-                fontSize: '0.875rem'
-              }}>
-                Enter your Google Gemini API key to enable video generation
+              <p className="text-gray-400 text-sm">
+                Enter your Google Gemini API key to enable video generation.
               </p>
             </div>
 
             <div>
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{
-                  display: 'block',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  color: '#E5E7EB',
-                  marginBottom: '0.5rem'
-                }}>
+              <div className="mb-5">
+                <label htmlFor="gemini-api-key" className="block text-sm font-medium text-gray-200 mb-2">
                   Google Gemini API Key
                 </label>
                 <input
+                  id="gemini-api-key"
                   type="password"
                   value={tempApiKey}
                   onChange={(e) => setTempApiKey(e.target.value)}
-                  placeholder="AIza..."
-                  className="input-futuristic"
-                  style={{
-                    width: '100%',
-                    fontFamily: 'monospace',
-                    fontSize: '0.875rem'
-                  }}
+                  placeholder="Enter your API key..."
+                  className="input-futuristic w-full font-mono text-sm focus:ring-offset-gray-800" // Added focus:ring-offset-gray-800
                 />
-                <p style={{
-                  fontSize: '0.75rem',
-                  color: '#6B7280',
-                  marginTop: '0.5rem'
-                }}>
-                  Your API key is stored locally and never sent to our servers
+                <p className="text-xs text-gray-500 mt-2.5">
+                  Your API key is stored securely in your local application settings.
                 </p>
               </div>
 
-              <div style={{
-                display: 'flex',
-                gap: '0.75rem',
-                paddingTop: '1rem'
-              }}>
-                <button
-                  onClick={() => setShowApiKeyModal(false)}
-                  style={{
-                    flex: 1,
-                    padding: '0.5rem 1rem',
-                    borderRadius: '0.5rem',
-                    border: '1px solid #4B5563',
-                    color: '#9CA3AF',
-                    background: 'transparent',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#6B7280'
-                    e.currentTarget.style.color = '#E5E7EB'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#4B5563'
-                    e.currentTarget.style.color = '#9CA3AF'
-                  }}
-                >
-                  Cancel
-                </button>
+              <div className="flex flex-col sm:flex-row-reverse gap-3 pt-4">
                 <button
                   onClick={handleSaveApiKey}
-                  className="btn-secondary"
-                  style={{ flex: 1 }}
+                  type="button"
+                  className="btn-primary flex-1 text-sm py-2.5 px-4 focus:ring-offset-2 focus:ring-offset-gray-800"
                 >
-                  Save
+                  Save Key
+                </button>
+                <button
+                  onClick={() => setShowApiKeyModal(false)}
+                  type="button"
+                  className="flex-1 px-4 py-2.5 rounded-lg border border-gray-600 text-gray-300 hover:border-gray-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition-colors duration-200 text-sm font-medium"
+                >
+                  Cancel
                 </button>
               </div>
             </div>
